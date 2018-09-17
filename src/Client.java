@@ -1,73 +1,88 @@
-import java.io.*;
 import java.net.*;
+import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Scanner;
 
-public class Client implements Runnable {
-	static BufferedReader in = null;
-	static PrintWriter out = null;
-	static BufferedReader inu;
-	static String fuser, fserver;
-	static Client cl;
+/**
+ * СЃРѕР·РґР°РЅРёРµ РєР»РёРµРЅС‚Р° СЃРѕ РІСЃРµРјРё РЅРµРѕР±С…РѕРґРёРјС‹РјРё СѓС‚РёР»РёС‚Р°РјРё, С‚РѕС‡РєР° РІС…РѕРґР° РІ РїСЂРѕРіСЂР°РјРјСѓ РІ
+ * РєР»Р°СЃСЃРµ Client
+ */
+
+public class Client {
+	Scanner sc = new Scanner(System.in);
+	BufferedReader in = null;
+	PrintWriter out = null;
+	BufferedReader inu;
 	String clName = "";
+	String addres = "";
+
+	// С‡РёС‚Р°РµРј СЃРјСЃ СЃ СЃРµСЂРІ
+	private class ReadMsg extends Thread {
+		@Override
+		public void run() {
+
+			String str;
+			try {
+				while (true) {
+					str = in.readLine(); // Р¶РґРµРј СЃРѕРѕР±С‰РµРЅРёСЏ СЃ СЃРµСЂРІРµСЂР°
+					System.out.println(str); // РїРёС€РµРј СЃРѕРѕР±С‰РµРЅРёРµ СЃ СЃРµСЂРІРµСЂР° РЅР° РєРѕРЅСЃРѕР»СЊ
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	// РѕС‚РїСЂР°РІР»РµСЏРµРј РјСЃРј РЅР° СЃРµСЂРІРµСЂ
+	public class WriteMsg extends Thread {
+
+		@Override
+		public void run() {
+			while (true) {
+				String userWord;
+				userWord = sc.nextLine(); // СЃРѕРѕР±С‰РµРЅРёСЏ СЃ РєРѕРЅСЃРѕР»Рё
+				out.println(clName + ": " + userWord);
+
+			}
+		}
+	}
 
 	private void Go() throws IOException {
-		Scanner sc = new Scanner(System.in);
 		inu = new BufferedReader(new InputStreamReader(System.in));
-
-		String addres = "";
-		System.out.println("Добро пожаловать в клиенты");
+		System.out.println("Р”РѕР±СЂРѕ РїРѕРґР°Р»РѕРІР°С‚СЊ РІ РєР»РёРµРЅС‚С‹");
 
 		InetAddress IP = InetAddress.getLocalHost();
-		System.out.println("IP адрес вашей системы (не сервера) - " + IP.getHostAddress());
+		System.out.println("Р’Р°С€ IP Р°РґСЂРµСЃ (РЅРµ СЃРµСЂРІРµСЂР°) - " + IP.getHostAddress());
 
 		Socket fromserver = null;
-		System.out.println("Введите номер порта (по умолчанию 8080)");
+		System.out.println("Р’С‹Р±РµСЂРёС‚Рµ РїРѕСЂС‚ РґР»СЏ РїРѕРґРєР»СЋС‡РµРЅРёСЏ(РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ 8080)");
 		int portServ = sc.nextInt();
-		System.out.println("Введите IP адрес (127.0.0.1 если локально)");
+		System.out.println("Р’РІРµРґРёС‚Рµ IP РїРѕРґРєР»СЋС‡РµРЅРёСЏ (127.0.0.1 РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ)");
 		addres = inu.readLine();
-		
-		System.out.println("Введите ваше имя");
+
+		System.out.println("Р’РІРµРґРёС‚Рµ РІР°С€Рµ РёРјСЏ");
 		clName = inu.readLine();
 
-		System.out.println("Подключение к ... " + addres);
+		System.out.println("РџРѕРґРєР»СЋС‡РµРЅРёРµ... ");
+		try {
+			fromserver = new Socket(addres, portServ);
+			in = new BufferedReader(new InputStreamReader(fromserver.getInputStream()));
+			out = new PrintWriter(fromserver.getOutputStream(), true);
 
-		fromserver = new Socket(addres, portServ);
-		in = new BufferedReader(new InputStreamReader(fromserver.getInputStream()));
-		out = new PrintWriter(fromserver.getOutputStream(), true);
-		
-		new Thread(cl).start();
-		System.out.println("Успешно. Приятного общения");
-		while ((fserver = in.readLine()) != null) {
-			System.out.println(fserver);
-
+			new WriteMsg().start();
+			new ReadMsg().start();
+		} catch (Exception ex) {
+			System.out.println("РћС€РёР±РѕС‡РєР° РІС‹С€Р»Р°... ");
+			fromserver.close();
+			in.close();
+			out.close();
+			inu.close();
 		}
-
-		out.close();
-		in.close();
-		inu.close();
-		fromserver.close();
 	}
 
 	public static void main(String[] args) throws IOException {
-		cl = new Client();
+		Client cl = new Client();
 		cl.Go();
-	}
-
-	@Override
-	public void run() {
-		inu = new BufferedReader(new InputStreamReader(System.in));
-		String a;
-		//System.out.println("ПОТООК ПОШОООООООЛ");
-		try {
-			while ((fuser = inu.readLine()) != null) {
-
-				out.println(clName + " " + fuser);
-				//System.out.println(fuser);
-				//System.out.println("ПОТООК ИДЕЕЕЕЕЕЕЕЕЕЕЕЕЕт");
-			}
-		} catch (IOException e) {
-			System.out.println("Общение скончалось(((");
-			//e.printStackTrace();
-		}
 	}
 }
